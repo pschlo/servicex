@@ -1,4 +1,4 @@
 
 
 # Setup
-Create a symlink 'dockerex' in ~/bin pointing to dockerex.sh
+Create a symlink `~/bin/dockerex` pointing to `dockerex.sh`
