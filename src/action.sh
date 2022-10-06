@@ -34,8 +34,13 @@ dockerex-action() {
         if ! dockerex-ls | grep -q "^${service}$"; then echo -e "Service '$service' does not exist.\nUse 'dockerex ls' to list available services."; continue; fi
 
         # execute action scripts
+        # services can refer to "." as their service directory and to $SERVICE as their service name
         echo "${action^^} $service"
-        "$SERVICE_DIR/$service/$action.sh"
+        export SERVICE="$service"
+        old_pwd="$PWD"
+        cd "$SERVICE_DIR/$service" >/dev/null 2>&1
+        "./${action}.sh"
+        cd "$old_pwd" >/dev/null 2>&1
 
         is_first=
     done
