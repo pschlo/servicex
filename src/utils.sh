@@ -7,9 +7,12 @@ UTILS_SH=true
 shopt -s extglob
 shopt -s nullglob
 
+# WARN: programs in pipe might receive SIGPIPE and exit with 141, thus changing the pipe exit code
+set -o pipefail
+
 # define valid service actions
 # respective .sh files must exist in service dirs
-SERVICE_ACTIONS=( run start stop )
+SERVICE_ACTIONS=( run start stop backup )
 
 # define all valid commands
 COMMANDS=( ls )
@@ -34,3 +37,29 @@ element_in() {
     for elem in "$@"; do [[ $elem == $match ]] && return 0; done
     return 1
 }
+
+
+# returns host mount point of a named docker volume
+get_mount() {
+    sudo docker volume inspect --format '{{ .Mountpoint }}' "$1"
+}
+
+
+# see https://stackoverflow.com/a/5431932
+container_exists() {
+    [[ $(sudo docker ps -a --filter name="$1" | tail -n +2) ]]
+}
+
+
+indent() {
+    sed "s/^/    /g"
+}
+
+# run command $1 with arguments $2 $3 ..., but indent output
+# keeps stdout and stderr
+#indent() {
+#    cmd="$1"; shift
+#    "$cmd" "$@" \
+#        > >(sed "s/^/    /g") \
+#        2> >(sed "s/^/    /g" >&2)
+#}

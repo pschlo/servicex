@@ -6,9 +6,10 @@ LS_SH=true
 dockerex-ls() {
     shift
 
-    if [[ $# -ne 0 ]]; then echo "Too many arguments."; exit 1; fi
+    if [[ $# -gt 0 ]]; then echo "Too many arguments."; exit 1; fi
 
-    get_services; services=("${retval[@]}")
+    get_services; local services=("${retval[@]}")
+    local service
     for service in "${services[@]}"; do
         echo "$service"
     done
@@ -16,7 +17,7 @@ dockerex-ls() {
 
 # returns array of services
 get_services() {
-    args=()
+    local args=()
     for i in "$SERVICE_DIR"/*; do
         [[ -d $i ]] && args+=( "$(basename "$i")" )
     done
