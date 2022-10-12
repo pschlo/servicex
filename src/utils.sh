@@ -19,11 +19,13 @@ COMMANDS=( ls )
 COMMANDS+=( "${SERVICE_ACTIONS[@]}" )
 
 # format SERVICE_ACTIONS and COMMANDS as string, separated by |
-old_ifs="$IFS"
-IFS='|'
-SERVICE_ACTIONS_STR="${SERVICE_ACTIONS[*]}"
-COMMANDS_STR="${COMMANDS[*]}"
-IFS="$old_ifs"
+# execute in function so that IFS is only changed there
+set_strs() {
+    local IFS='|'
+    SERVICE_ACTIONS_STR="${SERVICE_ACTIONS[*]}"
+    COMMANDS_STR="${COMMANDS[*]}"
+}
+set_strs
 
 
 # returns 0 if $1 is contained in array ($2 $3 ...)
@@ -41,18 +43,35 @@ element_in() {
 
 # returns host mount point of a named docker volume
 get_mount() {
-    sudo docker volume inspect --format '{{ .Mountpoint }}' "$1"
+    docker volume inspect --format '{{ .Mountpoint }}' "$1"
 }
 
 
 # see https://stackoverflow.com/a/5431932
 container_exists() {
-    [[ $(sudo docker ps -a --filter name="$1" | tail -n +2) ]]
+    [[ $(docker ps -a --filter name="$1" | tail -n +2) ]]
 }
 
 
 indent() {
     sed "s/^/    /g"
+}
+
+# remove all whitespaces
+rem_space() {
+    tr -d '[:space:]'
+}
+
+rem_single_quote() {
+    tr -d "'"
+}
+
+trim() {
+    sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'
+}
+
+contains_space() {
+    [[ $1 == *" "* ]]
 }
 
 # run command $1 with arguments $2 $3 ..., but indent output

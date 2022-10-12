@@ -8,14 +8,14 @@ MAIN_SH=true
 main() {
     command="${1,,}"  # ignore case
     shift
-    set -- "$command" "$@"  # update positional args
+    #set -- "$command" "$@"  # update positional args
 
     # using variable in case pattern; see https://stackoverflow.com/q/13254425
     case "$command" in
         ls )
-            dockerex-ls "$@" ;;
+            command_ls "$@" ;;
         @($SERVICE_ACTIONS_STR) )
-            dockerex-action "$@" ;;
+            command_action "$command" "$@" ;;
         * )
             echo "Invalid command."
             echo "Usage: dockerex [$COMMANDS_STR] [SERVICE...|all]"

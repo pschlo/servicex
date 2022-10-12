@@ -3,7 +3,7 @@
 if [[ $LS_SH ]]; then return; fi
 LS_SH=true
 
-dockerex-ls() {
+command_ls() {
     shift
 
     if [[ $# -gt 0 ]]; then echo "Too many arguments."; exit 1; fi
