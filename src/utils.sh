@@ -74,6 +74,18 @@ contains_space() {
     [[ $1 == *" "* ]]
 }
 
+# copy value of $1 to $2
+cp_var() {
+    cmd="$(declare -p "$1" 2>/dev/null)"
+    pattern="^declare -([[:alpha:]-]*) $1=(.*)"
+    [[ $cmd =~ $pattern ]]
+    unset "$2"
+    eval "declare -${BASH_REMATCH[1]//[r-]}g $2=${BASH_REMATCH[2]}"
+}
+
+#cmd=$(declare -p "$var" | sed -E "s|(declare -[[:alpha:]-]*) $var=|\1 newvar=|g"); unset newvar; eval "$cmd"
+
+
 # run command $1 with arguments $2 $3 ..., but indent output
 # keeps stdout and stderr
 #indent() {

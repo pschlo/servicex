@@ -1,53 +1,34 @@
 
 
-
-## regex patterns
-
-PATTERN_SINGLE_QUOTE="'"
-# first blanks, then comment
-PATTERN_IGNORE='^[[:blank:]]*(#.*)?$'
-# first blanks, then [, then blanks, then section (any characters, but ending in non-blank), then blanks, then ], then blanks
-PATTERN_SECTION='^[[:blank:]]*\[[[:blank:]]*(.+[^[:blank:]])[[:blank:]]*\][[:blank:]]*$'
-# first blanks, then key (underscore/letters/numbers), then blanks, then =, then blanks, then value (any characters, but ending in non-blank character), then blanks
-PATTERN_KEY_VALUE='^[[:blank:]]*([_[:alnum:]]+)[[:blank:]]*=[[:blank:]]*(.*[^[:blank:]])[[:blank:]]*$'
-
-
-TMPFILE='.tmpfile'
-section=
-
 # receives single service as input
 # reads backups.cfg and runs every backup command
 # command is the only key whose value is taken literally
 action_backup() {
-    init
-    while IFS= read -r line; do
-        if [[ $line =~ $PATTERN_IGNORE ]]; then
-            continue
-        elif [[ $line =~ $PATTERN_SECTION ]]; then
-            section="${BASH_REMATCH[1]}"
-            execute
-            init  # reset
-        elif [[ $line =~ $PATTERN_KEY_VALUE ]]; then
-            key="${BASH_REMATCH[1]}"
-            value="${BASH_REMATCH[2]}"
+    local section key TMPFILE='.tmpfile' SOURCE="./backups.cfg"
+    # get sections
+    get_ini "$SOURCE"; cp_var retval sections
+    for section in "${sections[@]}"; do
+        init
+        # get key-value pairs
+        get_ini "$SOURCE" "$section"; cp_var retval dict
+        for key in "${!dict[@]}"; do
+            local value="${dict[$key]}"
             if [[ $key == 'command' ]]; then command="$value"; continue; fi
+            # TODO: reverse approach; get escaped assignment string with declare -p and then un-escape $
             if has_illegal_esc "$value"; then echo "Illegal escape: $value"; return 1; fi
-            escape_special_chars "$value"; value="$retval"
+            escape_special_chars "$value"; cp_var retval value
             add_key_value "$key" "$value"
-            echo "[$section] $key=$value"
-        else
-            echo "ERROR: Invalid line in backups.cfg: $line"
-            return 1
-        fi
-    done < "./backups.cfg"
-    execute
+            echo "[$section] $key = $value"
+        done
+        execute
+    done
 }
 
 
 execute() {
-    # execute in new shell, i.e. without inheriting variables
+    # execute in new shell, i.e. without inheriting variables; exit when any error occurs
     echo "$command" >>"$TMPFILE"
-    bash "$TMPFILE"
+    bash -e "$TMPFILE"
 }
 
 # $1: key
@@ -87,25 +68,3 @@ escape_special_chars() {
     retval="$(echo "$1" | sed -E -e "$SED_ESC_DOUBLE_QUOTE" -e "$SED_ESC_BACKTICK")"
 }
 
-
-
-#key="$(echo "$key" | trim)"
-#        if contains_space "$key"; then echo "ERROR: key '$key' contains whitespace"; return 1; fi
-#        value="$(echo "$value" | trim)"
-#
-#        if [[ $key == \[*] || $is_done ]]; then
-#            # found section
-#            section="$key"
-#            str+='; eval "$command"'
-#            # execute in new shell with clean env
-#            env -i SERVICE="$1" bash -c "$str"
-#            # reset
-#            str=":"
-#        elif [[ $value ]]; then
-#            # found key value pair
-#            str+="; declare '$key'='$value'"
-#        fi
-#
-#        if [[ $is_done ]]; then break; fi
-#    done < "./backups.cfg"
-#}
