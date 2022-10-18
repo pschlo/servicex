@@ -12,10 +12,10 @@ set -o pipefail
 
 # define valid service actions
 # respective .sh files must exist in service dirs
-SERVICE_ACTIONS=( run start stop backup )
+SERVICE_ACTIONS=( 'run' 'start' 'stop' 'backup' )
 
 # define all valid commands
-COMMANDS=( ls )
+COMMANDS=( 'ls' )
 COMMANDS+=( "${SERVICE_ACTIONS[@]}" )
 
 # format SERVICE_ACTIONS and COMMANDS as string, separated by |
@@ -75,12 +75,51 @@ contains_space() {
 }
 
 # copy value of $1 to $2
-cp_var() {
-    cmd="$(declare -p "$1" 2>/dev/null)"
-    pattern="^declare -([[:alpha:]-]*) $1=(.*)"
+#cp_var() {
+#    local cmd="$(declare -p "$1" 2>/dev/null)"
+#    local pattern="^declare -([[:alpha:]-]*) $1=(.*)"
+#    [[ $cmd =~ $pattern ]]
+#    unset "$2"
+#    eval "declare -${BASH_REMATCH[1]//[r-]}g $2=${BASH_REMATCH[2]}"
+#    declare -n var=$2
+#    eval "declare -${BASH_REMATCH[1]//[r-]}g $2=${BASH_REMATCH[2]}"
+#
+#}
+
+# RULES
+# a function's return value is stored in the global variable "retval"
+# to copy a variable, use 'declare -* newvar="$(get_declare oldvar)"', where * stands for arbitrary declare options
+# to set $retval in a function, use 'unset retval; declare -*g retval=...'
+
+# TODO: check out https://stackoverflow.com/a/8881121
+
+
+get_declare() {
+    local cmd="$(declare -p "$1" 2>/dev/null)"
+    local pattern="^declare -([[:alpha:]-]*) $1=(.*)"
     [[ $cmd =~ $pattern ]]
-    unset "$2"
-    eval "declare -${BASH_REMATCH[1]//[r-]}g $2=${BASH_REMATCH[2]}"
+    echo "${BASH_REMATCH[2]}"
+    unset retval; retval="${BASH_REMATCH[2]}"
+}
+
+get_dec() {
+    get_declare "$@"
+}
+
+
+# $1,$2,..: dicts as declare-strings
+merge_dicts() {
+    unset retval
+    declare -A merged_dict
+
+    for dict_str in "$@"; do
+        declare -A dict="$dict_str"
+        for key in "${!dict[@]}"; do
+            merged_dict["$key"]="${dict[$key]}"
+        done
+    done
+
+    declare -Ag retval=$(get_dec merged_dict)
 }
 
 #cmd=$(declare -p "$var" | sed -E "s|(declare -[[:alpha:]-]*) $var=|\1 newvar=|g"); unset newvar; eval "$cmd"

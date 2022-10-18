@@ -9,13 +9,14 @@ PATTERN_KEY_VALUE='^[[:blank:]]*([_[:alnum:]]+)[[:blank:]]*=[[:blank:]]*(.*[^[:b
 
 
 get_ini() {
-    local inifile="$1"
-    local section="$2"
-    local key
+    unset retval
+
+    local file="$1" section="$2"
     local sections=()
-    declare -A dict
+    declare -A dict=()
     local is_section=
 
+    local line
     while IFS= read -r line; do
         if [[ $line =~ $PATTERN_IGNORE ]]; then
             continue
@@ -29,18 +30,18 @@ get_ini() {
         elif [[ $line =~ $PATTERN_KEY_VALUE ]]; then
             # continue if listing sections or if not in correct section
             if [[ ! $section || ! $is_section ]]; then continue; fi
-            key="${BASH_REMATCH[1]}"
-            value="${BASH_REMATCH[2]}"
+            local key="${BASH_REMATCH[1]}"
+            local value="${BASH_REMATCH[2]}"
             dict["$key"]="$value"
         else
-            echo "ERROR: Invalid line in backups.cfg: $line"
-            return 1
+            echo "ERROR: Invalid line in config file $1: $line"
+            exit 1
         fi
-    done < "$1"
+    done < "$file"
 
     if [[ $section ]]; then
-        cp_var dict retval
+        declare -Ag retval=$(get_dec dict)
     else
-        cp_var sections retval
+        declare -ag retval=$(get_dec sections)
     fi
 }

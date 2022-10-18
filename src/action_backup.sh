@@ -4,30 +4,37 @@
 # reads backups.cfg and runs every backup command
 # command is the only key whose value is taken literally
 action_backup() {
-    local section key TMPFILE='.tmpfile' SOURCE="./backups.cfg"
+    local command TMPFILE='.tmpfile' SOURCE="./backups.cfg"
     # get sections
-    get_ini "$SOURCE"; cp_var retval sections
+    get_ini "$SERVICE_DIR/$SERVICE/backup.sh"; declare -a sections="$(get_dec retval)"
+
+    local section
     for section in "${sections[@]}"; do
+        # merge service-specific options and general options
+        get_ini "$SERVICE_DIR/$SERVICE/backup.sh" "$section"; service_dict_str=$(get_dec retval)
+        get_ini "$SOURCE" "$section"; general_dict_str=$(get_dec retval)
+        merge_dicts "$general_dict_str" "$service_dict_str"; declare -A merged_dict=$(get_dec retval)
         init
-        # get key-value pairs
-        get_ini "$SOURCE" "$section"; cp_var retval dict
-        for key in "${!dict[@]}"; do
-            local value="${dict[$key]}"
+        command=':'
+        local key
+        for key in "${!merged_dict[@]}"; do
+            local value="${merged_dict[$key]}"
             if [[ $key == 'command' ]]; then command="$value"; continue; fi
             # TODO: reverse approach; get escaped assignment string with declare -p and then un-escape $
             if has_illegal_esc "$value"; then echo "Illegal escape: $value"; return 1; fi
-            escape_special_chars "$value"; cp_var retval value
+            escape_special_chars "$value"; value="$retval"
             add_key_value "$key" "$value"
             echo "[$section] $key = $value"
         done
-        execute
+        execute "$command"
     done
 }
 
 
+# $1: command to execute
 execute() {
     # execute in new shell, i.e. without inheriting variables; exit when any error occurs
-    echo "$command" >>"$TMPFILE"
+    echo "$1" >>"$TMPFILE"
     bash -e "$TMPFILE"
 }
 
@@ -39,7 +46,6 @@ add_key_value() {
 
 
 init() {
-    command=
     >"$TMPFILE"
     echo "source ./src/utils.sh" >>"$TMPFILE"
     echo "SERVICE='$SERVICE'" >>"$TMPFILE"
@@ -57,6 +63,7 @@ has_illegal_esc() {
 
 # $1: value
 escape_special_chars() {
+    unset retval
 #    local SED_ESC_BACKSLASH='s/\\/\\\\/g'
     local SED_ESC_DOUBLE_QUOTE='s/"/\\"/g'
 #    local SED_ESC_SUBSHELL='s/\$(/\\\$(/g'

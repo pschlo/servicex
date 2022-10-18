@@ -12,9 +12,9 @@ command_action() {
     if ! element_in "$action" "${SERVICE_ACTIONS[@]}"; then echo "Invalid action."; exit 1; fi
 
     # get available services
-    get_services; local AVAIL_SERVICES=("${retval[@]}")
+    get_services; declare -a AVAIL_SERVICES="$(get_declare retval)"
 
-    parse_services "$@"; services=("${retval[@]}")
+    parse_services "$@"; declare -a services="$(get_declare retval)"
 
     execute_action "$action" "${services[@]}"
 }
@@ -27,12 +27,12 @@ parse_services() {
         if (( $# > 1 )); then echo "No additional arguments allowed when specifying 'all'."; exit 1; fi
         # check if any services available
         if (( ${#AVAIL_SERVICES[@]} == 0 )); then echo "No services available."; exit 1; fi
-        retval=("${AVAIL_SERVICES[@]}")
+        unset retval; declare -ag retval="$(get_declare AVAIL_SERVICES)"
     else
         # check arguments
         if (( $# == 0 )); then echo -e "Not enough arguments.\nUsage: dockerex $SERVICE_ACTIONS_STR SERVICE...|all"; exit 1; fi
         # get services from positional args
-        retval=("$@")
+        unset retval; retval=("$@")
     fi
 }
 
@@ -51,10 +51,9 @@ execute_action() {
         if ! element_in "$service" "${AVAIL_SERVICES[@]}"; then echo -e "Service '$service' does not exist.\nUse 'dockerex ls' to list available services."; continue; fi
 
         # execute action
-        # action call inherits entire env, plus $SERVICE; run in subshell
+        # action call inherits all shell variables, plus $SERVICE; run in subshell so that variables here stay unaffected
         echo "${action^^} $service"
         (SERVICE="$service" action_"$action" "$service" 2>&1 | indent)
-
         # this is ok because pipefail is set
         if (( $? == 0 )); then echo "OK"; else echo "ERROR"; fi
 
