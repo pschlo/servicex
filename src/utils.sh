@@ -3,6 +3,7 @@
 if [[ $UTILS_SH ]]; then return; fi
 UTILS_SH=true
 
+
 # set globbing options
 shopt -s extglob
 shopt -s nullglob
@@ -26,6 +27,8 @@ set_strs() {
     COMMANDS_STR="${COMMANDS[*]}"
 }
 set_strs
+
+
 
 
 # returns 0 if $1 is contained in array ($2 $3 ...)

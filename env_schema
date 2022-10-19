@@ -1,2 +1,3 @@
 
 SERVICE_DIR=~/services
+BACKUP_DIR=

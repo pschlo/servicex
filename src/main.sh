@@ -6,7 +6,7 @@ MAIN_SH=true
 # 1: script/action to run
 # 2,3,...: services
 main() {
-    command="${1,,}"  # ignore case
+    local command="${1,,}"  # ignore case
     shift
     #set -- "$command" "$@"  # update positional args
 
@@ -22,6 +22,5 @@ main() {
             exit 1
             ;;
     esac
-#    echo "sections: ${sections[@]}"
 }
 

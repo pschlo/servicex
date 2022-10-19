@@ -3,17 +3,23 @@
 # receives single service as input
 # reads backups.cfg and runs every backup command
 # command is the only key whose value is taken literally
+# WARN: key value pairs are NOT considered in the order they appear in; however, the command is always executed last
 action_backup() {
-    local command TMPFILE='.tmpfile' SOURCE="./backups.cfg"
-    # get sections
-    get_ini "$SERVICE_DIR/$SERVICE/backup.sh"; declare -a sections="$(get_dec retval)"
+    local SERVICE_CONFIG="$SERVICE_DIR/$SERVICE/backups.cfg"
+    local GENERAL_CONFIG="./backups.cfg"
+    local TMPFILE='.tmpfile'
+    local command=
+
+    # get service-specific config sections
+    get_ini "$SERVICE_CONFIG"; declare -a sections="$(get_dec retval)"
 
     local section
     for section in "${sections[@]}"; do
-        # merge service-specific options and general options
-        get_ini "$SERVICE_DIR/$SERVICE/backup.sh" "$section"; service_dict_str=$(get_dec retval)
-        get_ini "$SOURCE" "$section"; general_dict_str=$(get_dec retval)
+        # merge service-specific options and general options; service options override general options
+        get_ini "$SERVICE_CONFIG" "$section"; service_dict_str=$(get_dec retval)
+        get_ini "$GENERAL_CONFIG" "$section"; general_dict_str=$(get_dec retval)
         merge_dicts "$general_dict_str" "$service_dict_str"; declare -A merged_dict=$(get_dec retval)
+
         init
         command=':'
         local key
