@@ -16,7 +16,7 @@ command_action() {
 
     parse_services "$@"; declare -a services="$(get_declare retval)"
 
-    execute_action "$action" "${services[@]}"
+    loop_services "$action" "${services[@]}"
 }
 
 
@@ -39,7 +39,7 @@ parse_services() {
 
 # $1: action
 # $2,$3,...: services
-execute_action() {
+loop_services() {
     local action="$1"; shift
     local services=("$@")
     local is_first="true"
@@ -53,10 +53,19 @@ execute_action() {
         # execute action
         # action call inherits all shell variables, plus $SERVICE; run in subshell so that variables here stay unaffected
         echo "${action^^} $service"
-        (SERVICE="$service" action_"$action" "$service" 2>&1 | indent)
+        execute_action "$action" "$service" 2>&1 | indent
         # this is ok because pipefail is set
         if (( $? == 0 )); then echo "OK"; else echo "ERROR"; fi
 
         is_first=
     done
+}
+
+
+execute_action() {
+    (
+        SERVICE="$2"
+        for i in "$UTILS_DIR/"*; do source "$i"; done
+        source "$SERVICE_DIR/$2/${1}.sh"
+    )
 }

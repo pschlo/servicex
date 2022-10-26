@@ -11,7 +11,8 @@ command_ls() {
     get_services; declare -a services="$(get_declare retval)"
     local service
     for service in "${services[@]}"; do
-        echo "$service"
+        get_service_status "$service"; local status="$retval"
+        echo "$service  ($status)"
     done
 }
 

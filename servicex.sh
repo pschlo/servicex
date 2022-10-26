@@ -15,7 +15,7 @@ dir=$( cd -P "$( dirname "$source" )" >/dev/null 2>&1 && pwd )
 cd "$dir" >/dev/null 2>&1
 
 
-source "./env"
+source "./general.env"
 source "./src/utils.sh"
 # dotsource src dir
 for i in "./src/"*.sh; do source "$i"; done

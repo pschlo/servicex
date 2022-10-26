@@ -13,7 +13,7 @@ set -o pipefail
 
 # define valid service actions
 # respective .sh files must exist in service dirs
-SERVICE_ACTIONS=( 'run' 'start' 'stop' 'backup' )
+SERVICE_ACTIONS=( 'start' 'stop' 'backup' )
 
 # define all valid commands
 COMMANDS=( 'ls' )
@@ -29,8 +29,6 @@ set_strs() {
 set_strs
 
 
-
-
 # returns 0 if $1 is contained in array ($2 $3 ...)
 # e.g.:
 #    array=( 1 2 3 )
@@ -41,18 +39,6 @@ element_in() {
     shift
     for elem in "$@"; do [[ $elem == $match ]] && return 0; done
     return 1
-}
-
-
-# returns host mount point of a named docker volume
-get_mount() {
-    docker volume inspect --format '{{ .Mountpoint }}' "$1"
-}
-
-
-# see https://stackoverflow.com/a/5431932
-container_exists() {
-    [[ $(docker ps -a --filter name="$1" | tail -n +2) ]]
 }
 
 
@@ -102,7 +88,6 @@ get_declare() {
     local pattern="^declare -([[:alpha:]-]*) $1=(.*)"
     [[ $cmd =~ $pattern ]]
     echo "${BASH_REMATCH[2]}"
-    unset retval; retval="${BASH_REMATCH[2]}"
 }
 
 get_dec() {
@@ -125,7 +110,6 @@ merge_dicts() {
     declare -Ag retval=$(get_dec merged_dict)
 }
 
-#cmd=$(declare -p "$var" | sed -E "s|(declare -[[:alpha:]-]*) $var=|\1 newvar=|g"); unset newvar; eval "$cmd"
 
 
 # run command $1 with arguments $2 $3 ..., but indent output
@@ -136,3 +120,11 @@ merge_dicts() {
 #        > >(sed "s/^/    /g") \
 #        2> >(sed "s/^/    /g" >&2)
 #}
+#!/bin/bash
+
+
+# $1: service
+get_service_status() {
+    unset retval
+    retval=$(execute_action "get_status" "$1")
+}
